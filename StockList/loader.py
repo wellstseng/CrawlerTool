@@ -26,12 +26,11 @@ class StockListHolder:
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
                 "Accept-Encoding": "gzip, deflate",
                 "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Cache-Control": "max-age=0",            
+                "Cache-Control": "max-age=0",
+                "Connection": "keep-alive",
                 "Host": "isin.twse.com.tw",
-                "Coolie":"JSESSIONID=F13C7761B22C9768E52BEB2B2C90ED44",
                 "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36",
-                "Connection": 'keep-alive',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36"
             }
             res = requests.get(url, headers=headers, timeout=60, verify=False)
             return res.text

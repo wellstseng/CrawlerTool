@@ -14,9 +14,9 @@ def insert_to_sql(data):
     industry_types = {}
 
 
-    query = 'if not exists (select * from dbo.StockInfos where Id = %s) begin \
+    query = 'if not exists (select * from dbo.StockInfo where Id = %s) begin \
                 insert into dbo.StockInfo values (%s, %s, %s, %s, %s) end'
-    print('insert query: ' + query)
+    
     conn = pymssql.connect(
                server='192.168.1.28', 
                user='xstocker2', 
@@ -26,10 +26,9 @@ def insert_to_sql(data):
     cursor.execute('select * from dbo.IndustryType')
     for row in cursor:
         industry_types[row['IndustryName']] = row['IndustryId']
-    print('industry_types:' + str(industry_types))
     length = len(data)
     for i in range(1, length):
-        if data[i][4] not in industry_types:
+        if data[i][4] and data[i][4] != "" and data[i][4] not in industry_types:
             print('insert {} into sql'.format(data[i][4]))
             cursor.execute("""insert into dbo.IndustryType (IndustryName) values (%d)""", data[i][4])
             print("result: " + str(cursor.rowcount) )
@@ -39,7 +38,7 @@ def insert_to_sql(data):
         
 
         data[i][3] = 0 if '上市' in data[i][3] else 1
-        data[i][4] = industry_types[data[i][4]]
+        data[i][4] = industry_types[data[i][4]] if data[i][4] and data[i][4] != "" else None
         data[i] = [data[i][0]] + data[i]
         print('data:' + str(data[i]))
         cursor.execute(query, tuple(data[i]))
@@ -48,5 +47,5 @@ def insert_to_sql(data):
 
 if __name__ == '__main__':
     marketType = sys.argv[1]
-    data = load_csv(4) 
+    data = load_csv(marketType) 
     insert_to_sql(data)
