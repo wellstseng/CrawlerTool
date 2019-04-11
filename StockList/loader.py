@@ -101,9 +101,9 @@ class StockListHolder:
 
 if __name__ == '__main__':
     if StockListHolder.TEST == False:
-        #marketType = sys.argv[1]
-        #StockListHolder.get_list(marketType)   
-        StockListHolder.get_list(4)   
+        marketType = sys.argv[1]
+        StockListHolder.get_list(marketType)   
+        #StockListHolder.get_list(4)   
     else:
         StockListHolder.get_list(4)     
 
