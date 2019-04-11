@@ -23,3 +23,9 @@ class MongoManager:
         collection = self.__get_collection(db_name, collection_name)
         result = collection.find_one(condition)
         return result
+    def get_collection_names(self, db_name):
+        db = self.__client[db_name]
+        return db.collection_names()
+    def drop_collection(self, db_name, collection_name):
+        db = self.__client[db_name]
+        db.drop_collection(collection_name)

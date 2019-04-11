@@ -1,7 +1,7 @@
 import os
 import twstock
 class Define:
-    FILE_PATH = os.path.abspath(os.path.dirname(__file__)).replace('\\','/')
+    FILE_PATH = "E:\StockResource" #os.path.abspath(os.path.dirname(__file__)).replace('\\','/')
     LIST_PATH_FMT = FILE_PATH + '/data/list{}.csv'
     TEST_HTML_PATH = FILE_PATH + '/data/test/stock_list.txt'
     TEST_LEADER_TRADE_PATH = FILE_PATH + '/res/test/leader_trade.txt'

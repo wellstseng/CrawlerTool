@@ -27,13 +27,13 @@ class StockListHolder:
                 "Accept-Encoding": "gzip, deflate",
                 "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
                 "Cache-Control": "max-age=0",            
-                "Cookie": "JSESSIONID=401EC65142FD36A1355F9BE52A38142F; _ga=GA1.3.636923337.1553517365; _gid=GA1.3.282057668.1554349839",
                 "Host": "isin.twse.com.tw",
+                "Coolie":"JSESSIONID=F13C7761B22C9768E52BEB2B2C90ED44",
                 "Upgrade-Insecure-Requests": "1",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36",
                 "Connection": 'keep-alive',
             }
-            res = requests.get(url, headers=headers, verify = False)
+            res = requests.get(url, headers=headers, timeout=60, verify=False)
             return res.text
         else:
             print('load list from test')
@@ -71,7 +71,7 @@ class StockListHolder:
             cols = row.find_all('td')
 
             if len(cols) == 1 :
-                if "股票" in cols[0].text:
+                if "股票" in cols[0].text or "ETF" in cols[0].text:
                     do_parse = True
                 else:
                     do_parse = False
@@ -91,6 +91,9 @@ class StockListHolder:
 
     @staticmethod
     def read_stock_ids(marketType):
+        if type(marketType) is str:
+            marketType=2 if marketType == "twse" else 4
+                
         file_path = StockListHolder.FILE_PATH_FMT.format(marketType)
         df = pd.read_csv(file_path, header=0, dtype={"Id":str})
         df.set_index('Id', inplace=True)
@@ -98,8 +101,9 @@ class StockListHolder:
 
 if __name__ == '__main__':
     if StockListHolder.TEST == False:
-        marketType = sys.argv[1]
-        StockListHolder.get_list(marketType)   
+        #marketType = sys.argv[1]
+        #StockListHolder.get_list(marketType)   
+        StockListHolder.get_list(4)   
     else:
         StockListHolder.get_list(4)     
 

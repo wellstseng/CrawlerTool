@@ -11,7 +11,7 @@ import time
 from datetime import timedelta, date, datetime
 import pandas as pd
 import csv
-
+from StockList.loader import StockListHolder
 
 import global_func
 import define
@@ -54,6 +54,7 @@ def normalize_file(market_type:str, file_path:str):
 
 
 def parse_file_to_db(market_type:str, file_path:str):
+    
     if not os.path.isfile(file_path):
         print("File:{} not exist do not parse to db".format(file_path))
         return
@@ -66,45 +67,43 @@ def parse_file_to_db(market_type:str, file_path:str):
     cnt = 0
     id_list = StockListHolder.read_stock_ids(market_type).tolist()
     for index, series in df.iterrows():
-        if str(index) in id_list:
-            try:    
-                series = df.loc[index]
-                suspend = "--" in series["開盤價"]
-                o = float(str(series["開盤價"].replace(',',''))) if not suspend else -1
-                h = float(str(series["最高價"].replace(',',''))) if not suspend else -1
-                l = float(str(series["最低價"].replace(',',''))) if not suspend else -1
-                c = float(str(series["收盤價"].replace(',',''))) if not suspend else -1
-                name =  series["證券名稱"]
-                volume = int(round(int(series["成交股數"].replace(',',''))*0.001, 0)) if not suspend else 0
-                turnover = round(int(series["成交金額"].replace(',',''))*0.00000001, 3)  if not suspend else 0
-                transaction = int(series["成交筆數"].replace(',',''))  if not suspend else 0
-                query = {
-                    "$set":
-                        {
-                            DB_KEY.DATE: year_month,
-                            "items.{0}.{1}".format(file_date, DB_KEY.OPEN):o,
-                            "items.{0}.{1}".format(file_date,DB_KEY.HIGH):h,
-                            "items.{0}.{1}".format(file_date,DB_KEY.LOW):l,
-                            "items.{0}.{1}".format(file_date,DB_KEY.CLOSE):c,
-                            "items.{0}.{1}".format(file_date,DB_KEY.VOLUME):volume,
-                            "items.{0}.{1}".format(file_date,DB_KEY.TURNOVER):turnover,
-                            "items.{0}.{1}".format(file_date,DB_KEY.TRANSACTION):transaction,                    
-                        }
-                }
-                result = mongo_mgr.upsert("stock", "Stock_{}".format(name), {DB_KEY.DATE:year_month}, query)
-                if result['ok'] != 1.0:
-                    raise Exception("mongo db upsert fail date:{0}, stock_id:{1}, query:{2}".format(file_date, index, query) )
-                
-                cnt += 1
-                if LOG_ENABLE:
-                    sys.stdout.flush()     
-                    print("{0:10} {1:8} => {2:6}/{3:6}\r".format(file_date, index, cnt, total ),end='')
-                
-            except Exception as e:
-                print("fail date:{} \n msg:{} \n data:{}".format(file_date, e, series))
-                break
+        cnt += 1
+        if str(index) in id_list:                
+            series = df.loc[index]
+            suspend = "--" in str(series["開盤價"])
+            o = float((str(series["開盤價"]).replace(',',''))) if not suspend else -1
+            h = float((str(series["最高價"]).replace(',',''))) if not suspend else -1
+            l = float((str(series["最低價"]).replace(',',''))) if not suspend else -1
+            c = float((str(series["收盤價"]).replace(',',''))) if not suspend else -1
+            name =  series["證券名稱"]
+            volume = int(round(int(series["成交股數"].replace(',',''))*0.001, 0)) if not suspend else 0
+            turnover = round(int(series["成交金額"].replace(',',''))*0.00000001, 3)  if not suspend else 0
+            transaction = int(series["成交筆數"].replace(',',''))  if not suspend else 0
+            query = {
+                "$set":
+                    {
+                        DB_KEY.DATE: year_month,
+                        "items.{0}.{1}".format(file_date, DB_KEY.OPEN):o,
+                        "items.{0}.{1}".format(file_date,DB_KEY.HIGH):h,
+                        "items.{0}.{1}".format(file_date,DB_KEY.LOW):l,
+                        "items.{0}.{1}".format(file_date,DB_KEY.CLOSE):c,
+                        "items.{0}.{1}".format(file_date,DB_KEY.VOLUME):volume,
+                        "items.{0}.{1}".format(file_date,DB_KEY.TURNOVER):turnover,
+                        "items.{0}.{1}".format(file_date,DB_KEY.TRANSACTION):transaction,                    
+                    }
+            }
+            result = mongo_mgr.upsert("stock", "Stock_{}".format(index), {DB_KEY.DATE:year_month}, query)
+            if result['ok'] != 1.0:
+                raise Exception("mongo db upsert fail date:{0}, stock_id:{1}, query:{2}".format(file_date, index, query) )
+            
+            
+            if LOG_ENABLE:
+                sys.stdout.flush()     
+                print("{0:10} {1:8} => {2:6}/{3:6}\r".format(file_date, index, cnt, total ),end='')
+
     print("", end="\n")
     print("done")
+    
 
 def check_update_latest_day(latest_date):
     #寫入最新股價日期
@@ -120,13 +119,13 @@ def check_update_latest_day(latest_date):
             }) 
         print("upsert latest date: " , str(result))
 
-def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, end_date:str=None, parse_to_db= False, try_load=True):
+def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, end_date:str=None, parse_to_db:bool=False, try_load:bool=True):
     if start_date == None:
         start_date = datetime.now().strftime("%Y/%m/%d")
     if end_date == None:
         end_date = global_func.get_latest_file_date(define.Define.SRC_DATA_PATH_FMT.format(define.DataType.PRICE,market_type))
  
-    print("start:{0}  end:{1}".format(start_date, end_date))
+    print("start:{0}  end:{1},  try load:{2}".format(start_date, end_date, try_load))
     s = start_date.split("/")
     e= end_date.split("/")
     start_date = date(int(s[0]), int(s[1]), int(s[2]))
@@ -145,9 +144,9 @@ def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, e
             src_date = single_date.strftime("%Y%m%d")
 
         if os.path.isfile(file_path):
-            print("Exist file. Do not load again")
+            print("Exist file. Do not load again: " + file_path)
         else:
-            if try_load :
+            if try_load == True :
                 print('Load csv date:{}  to {}'.format(src_date, file_path), end="\n")
                 url = url_fmt.format(src_date)           
                 req = requests.get(url, headers=headers)
@@ -167,8 +166,8 @@ def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, e
                         print('Load Done')
                 else:
                     print('No data')
-                print("Sleep 10")
-                time.sleep(10)
+                #print("Sleep 10")
+                #time.sleep(10)
 
         if parse_to_db:
             print("Parse file {0} to db".format(file_path))
@@ -179,3 +178,13 @@ if __name__=="__main__":
     load_range("twse", define.Define.TWSE_DAILY_PRICE_URL_FMT, define.Define.TWSE_DAILY_PRICE_HEADERS, parse_to_db=True)
     load_range("tpex", define.Define.TPEX_DAILY_PRICE_URL_FMT, define.Define.TPEX_DAILY_PRICE_HEADERS, parse_to_db=True)
     # print(define.Define.FILE_PATH)
+    '''
+    if sys.argv[1] == 'twse':
+        url = define.Define.TWSE_DAILY_PRICE_URL_FMT
+        header = define.Define.TWSE_DAILY_PRICE_HEADERS
+    else:
+        url = define.Define.TPEX_DAILY_PRICE_URL_FMT
+        header = define.Define.TPEX_DAILY_PRICE_HEADERS
+
+    load_range(sys.argv[1], url, header, start_date=sys.argv[2], end_date=sys.argv[3], parse_to_db=sys.argv[4], try_load=sys.argv[5])
+    '''
