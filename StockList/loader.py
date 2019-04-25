@@ -24,13 +24,14 @@ class StockListHolder:
             print('load list from url {}'.format(url))
             headers = {
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
-                "Accept-Encoding": "gzip, deflate",
+                "Accept-Encoding": "gzip,deflate",
                 "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
                 "Cache-Control": "max-age=0",
                 "Connection": "keep-alive",
+                "Cookie":"JSESSIONID=E1EEBD970DDFE3CFFA6A1EEB28D7912B",
                 "Host": "isin.twse.com.tw",
                 "Upgrade-Insecure-Requests": "1",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.86 Safari/537.36"
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
             }
             res = requests.get(url, headers=headers, timeout=60, verify=False)
             return res.text
