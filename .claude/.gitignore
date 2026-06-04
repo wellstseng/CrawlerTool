@@ -1,0 +1,11 @@
+# Ephemeral — 不版控
+*.access.json
+episodic/
+_staging/
+vector-db/
+
+# 版控（明確保留）
+!memory/MEMORY.md
+!memory/*.md
+!memory/failures/*.md
+!hooks/
