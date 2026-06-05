@@ -20,7 +20,7 @@ class StockListHolder:
     @staticmethod
     def __load_data(marketType):        
         if StockListHolder.TEST == False:
-            url = "http://isin.twse.com.tw/isin/C_public.jsp?strMode={}".format(marketType)
+            url = "https://isin.twse.com.tw/isin/C_public.jsp?strMode={}".format(marketType)
             print('load list from url {}'.format(url))
             headers = {
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
@@ -33,7 +33,9 @@ class StockListHolder:
                 "Upgrade-Insecure-Requests": "1",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
             }
-            res = requests.get(url, headers=headers, timeout=60, verify=False)
+            res = requests.get(url, headers=headers, timeout=60)
+            res.raise_for_status()
+            res.encoding = 'ms950'
             return res.text
         else:
             print('load list from test')
@@ -108,4 +110,3 @@ if __name__ == '__main__':
         StockListHolder.get_list(4)     
 
     # print(StockListHolder.read_stock_ids(2))
-

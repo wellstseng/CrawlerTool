@@ -6,7 +6,7 @@
 
 - 類型：Python 股票資料爬蟲 / 資料匯入腳本。
 - 規模：16 個非排除檔案，8 個 Python 原始碼檔。
-- 主要資料源：TWSE、TPEX 的股票清單、每日收盤行情 CSV/HTML。
+- 主要資料源：TWSE、TPEX 的股票清單、每日收盤行情 CSV/HTML；2026-06-05 已改用 HTTPS URL。
 - 主要儲存：MongoDB；另有 MSSQL 同步輔助腳本。
 - 執行模式：沒有統一 app entrypoint，各資料流程由個別 script 的 `__main__` 啟動。
 
@@ -62,7 +62,7 @@ StockList/loader.py
   -> StockList/list_2.csv, StockList/list_4.csv
 
 DailyTrade/daily_price2.py
-  -> 依 define.py URL 抓 TWSE/TPEX 每日行情
+  -> 依 define.py HTTPS URL 抓 TWSE/TPEX 每日行情
   -> 寫入 Define.FILE_PATH 底下的 CSV
   -> normalize_file()
   -> pandas read_csv()
@@ -77,10 +77,11 @@ StockList/mssql.py
 
 ## 風險與約束
 
-- `define.py` 使用 Windows 絕對路徑 `E:\StockResource`，macOS 本機直接跑會找不到資料根目錄。
+- `define.py` 支援 `STOCK_RESOURCE_PATH` 覆寫資料根目錄；macOS 預設改用專案內 `StockResource/`，Windows 預設仍保留 `E:\StockResource`。
 - DB 連線資訊與認證硬編碼在原始碼內；任何測試都可能打到真實內網資料庫。
-- CSV parser 依賴 TWSE/TPEX 舊欄位順序、中文欄名與行長度判斷，外部網站格式改版會直接影響流程。
-- `mongo.py` 使用較舊的 PyMongo API，例如 `collection.update()`、`collection_names()`。
+- 每日行情 parser 已改用欄位名稱正規化；2026-06-04 實測 TWSE 31,203 rows、TPEX 10,410 rows 可被 pandas 讀取。
+- TPEX 歷史補檔不可使用舊 `stk_quote_result.php`；該端點會忽略日期並回最新資料。已改用新版 `www/zh-tw/afterTrading/dailyQuotes` 並檢查回應 `資料日期`。
+- `mongo.py` 已改用 `update_one()`、`list_collection_names()`，並保留舊呼叫端使用的 `{"ok": 1.0}` 回傳格式。
 - `Requirements.txt` 是 UTF-16 LE；安裝前需先確認 pip 是否能接受，必要時再轉成 UTF-8。
 
 ## 後續建議分析

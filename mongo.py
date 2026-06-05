@@ -16,8 +16,13 @@ class MongoManager:
 
     def upsert(self, db_name, collection_name, condition, query):
         collection = self.__get_collection(db_name, collection_name)
-        result = collection.update(condition, query, upsert=True)
-        return result
+        result = collection.update_one(condition, query, upsert=True)
+        return {
+            "ok": 1.0,
+            "matched_count": result.matched_count,
+            "modified_count": result.modified_count,
+            "upserted_id": result.upserted_id,
+        }
     
     def find_one(self, db_name, collection_name, condition):
         collection = self.__get_collection(db_name, collection_name)
@@ -25,7 +30,7 @@ class MongoManager:
         return result
     def get_collection_names(self, db_name):
         db = self.__client[db_name]
-        return db.collection_names()
+        return db.list_collection_names()
     def drop_collection(self, db_name, collection_name):
         db = self.__client[db_name]
         db.drop_collection(collection_name)

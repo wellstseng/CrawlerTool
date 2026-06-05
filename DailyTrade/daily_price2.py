@@ -3,7 +3,6 @@
 
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from bson.objectid import ObjectId
 import requests
 import io
 import os.path
@@ -15,42 +14,102 @@ from StockList.loader import StockListHolder
 
 import global_func
 import define
-from mongo import MongoManager
 from define import DB_KEY as DB_KEY
 
-mongo_mgr = MongoManager("mongodb://stock:stock@192.168.1.14:27017/stock")
+mongo_mgr = None
 LOG_ENABLE = True
+
+def get_mongo_mgr():
+    global mongo_mgr
+    if mongo_mgr is None:
+        from mongo import MongoManager
+        mongo_mgr = MongoManager(os.environ.get("STOCK_MONGO_URL", "mongodb://stock:stock@192.168.1.14:27017/stock"))
+    return mongo_mgr
+
+def _clean_cell(value):
+    value = str(value).strip().replace('\u3000', '')
+    if value.startswith('="') and value.endswith('"'):
+        value = value[2:-1]
+    return value.replace('=', '')
+
+def _get_daily_price_header(market_type):
+    if market_type == define.MarketType.TPEX:
+        return {
+            "證券代號": "代號",
+            "證券名稱": "名稱",
+            "收盤價": "收盤",
+            "開盤價": "開盤",
+            "最高價": "最高",
+            "最低價": "最低",
+            "成交股數": "成交股數",
+            "成交金額": "成交金額(元)",
+            "成交筆數": "成交筆數",
+        }
+
+    return {
+        "證券代號": "證券代號",
+        "證券名稱": "證券名稱",
+        "收盤價": "收盤價",
+        "開盤價": "開盤價",
+        "最高價": "最高價",
+        "最低價": "最低價",
+        "成交股數": "成交股數",
+        "成交金額": "成交金額",
+        "成交筆數": "成交筆數",
+    }
+
+def _to_roc_date(src_date):
+    year, month, day = src_date.split("/")
+    return "{0}/{1}/{2}".format(int(year) - 1911, month.zfill(2), day.zfill(2))
+
+def _response_matches_date(market_type, text, src_date):
+    if market_type != define.MarketType.TPEX:
+        return True
+
+    expected = "資料日期:{0}".format(_to_roc_date(src_date))
+    return expected in text
+
 def normalize_file(market_type:str, file_path:str):
-    with open(file_path, "r+", encoding='utf8') as f:
-        text = f.read()
-        text_arr = [i.translate({ord(' '): None, ord('='):None}).rstrip(',') 
-            for i in text.split('\n') 
-                if (len(i.split('",')) >= 15 and len(i.split('",')) <= 17) or "代號" in i]
-        if market_type == define.MarketType.TPEX:
-            if len(text_arr) > 0:             
-                if "代號" in text_arr[0]:
-                    del text_arr[0] 
-                if len(text_arr) > 0:
-                    length = len(text_arr[0].split('",')) if text_arr != None and len(text_arr) > 0 else 0
-                    if "證券代號" not in text_arr[0]:
-                        if length == 15:
-                            text_arr.insert(0, "證券代號,證券名稱,收盤價,漲跌,開盤價,最高價,最低價,成交股數,成交金額,成交筆數,最後買價,最後賣價,發行股數,次日漲停價,次日跌停價")
-                        elif length == 17:
-                            text_arr.insert(0, "證券代號,證券名稱,收盤價,漲跌,開盤價,最高價,最低價,均價,成交股數,成交金額,成交筆數,最後買價,最後賣價,發行股數,次日參考價,次日漲停價,次日跌停價")
-        else:
-            if "證券代號" not in text_arr[0]:
-                del text_arr[0] 
-                    
-        initialize_text = "\n".join(text_arr) 
-        f.seek(0)
-        f.truncate()
-        f.write(initialize_text)
-        f.close()
-        # now_time = datetime.now()
-        # mongo_mgr.upsert("stock", "Logger", {DB_KEY.LOG_DATE:now_time.strftime("%Y%m%d")}, 
-        #     {"$push":{DB_KEY.PARSE_LOG:"{0}: {1}".format(now_time.strftime("%Y%m%d-%H:%M:%S"), "normalize file:{0} finish".format(file_path))}})
-    if len(text_arr) <= 0:
+    rows = []
+    with open(file_path, "r", encoding='utf8', newline='') as f:
+        rows = list(csv.reader(f))
+
+    header_index = None
+    for i, row in enumerate(rows):
+        if len(row) > 0 and row[0] in ("證券代號", "代號"):
+            header_index = i
+            break
+
+    if header_index is None:
         os.remove(file_path)
+        return
+
+    src_header = [_clean_cell(i) for i in rows[header_index]]
+    output_header = list(_get_daily_price_header(market_type).keys())
+    if all(i in src_header for i in output_header):
+        column_map = {i: i for i in output_header}
+    else:
+        column_map = _get_daily_price_header(market_type)
+    output_rows = []
+    for row in rows[header_index + 1:]:
+        if len(row) < len(src_header):
+            continue
+
+        row_map = {src_header[i]: _clean_cell(row[i]) for i in range(len(src_header))}
+        stock_id = row_map.get(column_map["證券代號"], "")
+        if stock_id == "" or stock_id in ("證券代號", "代號"):
+            continue
+
+        output_rows.append([row_map.get(column_map[col], "") for col in output_header])
+
+    if len(output_rows) <= 0:
+        os.remove(file_path)
+        return
+
+    with open(file_path, "w", encoding='utf8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(output_header)
+        writer.writerows(output_rows)
 
 
 def parse_file_to_db(market_type:str, file_path:str):
@@ -92,7 +151,7 @@ def parse_file_to_db(market_type:str, file_path:str):
                         "items.{0}.{1}".format(file_date,DB_KEY.TRANSACTION):transaction,                    
                     }
             }
-            result = mongo_mgr.upsert("stock", "Stock_{}".format(index), {DB_KEY.DATE:year_month}, query)
+            result = get_mongo_mgr().upsert("stock", "Stock_{}".format(index), {DB_KEY.DATE:year_month}, query)
             if result['ok'] != 1.0:
                 raise Exception("mongo db upsert fail date:{0}, stock_id:{1}, query:{2}".format(file_date, index, query) )
             
@@ -108,10 +167,11 @@ def parse_file_to_db(market_type:str, file_path:str):
 def check_update_latest_day(latest_date):
     #寫入最新股價日期
     if latest_date is not None :        
-        result = mongo_mgr.find_one("stock", "Outline", {DB_KEY.OBJECT_ID:ObjectId("5b940a041e6fe6eb0d8a53b2")})
+        from bson.objectid import ObjectId
+        result = get_mongo_mgr().find_one("stock", "Outline", {DB_KEY.OBJECT_ID:ObjectId("5b940a041e6fe6eb0d8a53b2")}) or {}
         curr_d = result[DB_KEY.LATEST_DAY] if DB_KEY.LATEST_DAY in result else None
         if curr_d is None or int(latest_date) > int(curr_d):
-           result = mongo_mgr.upsert("stock", "Outline", {DB_KEY.OBJECT_ID:ObjectId("5b940a041e6fe6eb0d8a53b2")}, 
+           result = get_mongo_mgr().upsert("stock", "Outline", {DB_KEY.OBJECT_ID:ObjectId("5b940a041e6fe6eb0d8a53b2")}, 
            {"$set":
                 {
                     DB_KEY.LATEST_DAY:latest_date,                 
@@ -135,13 +195,7 @@ def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, e
         
         file_path = global_func.get_abs_path(define.Define.DAILY_PRICE_FMT.format(market_type, single_date.strftime("%Y%m%d")))
         
-        if market_type == define.MarketType.TPEX:
-            src_date = single_date.strftime("%Y/%m/%d")
-            year = src_date.split('/')[0]
-            roc_year = str(int(year) - 1911)
-            src_date = src_date.replace(year, roc_year) 
-        else:
-            src_date = single_date.strftime("%Y%m%d")
+        src_date = single_date.strftime("%Y/%m/%d") if market_type == define.MarketType.TPEX else single_date.strftime("%Y%m%d")
 
         if os.path.isfile(file_path):
             print("Exist file. Do not load again: " + file_path)
@@ -149,21 +203,22 @@ def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, e
             if try_load == True :
                 print('Load csv date:{}  to {}'.format(src_date, file_path), end="\n")
                 url = url_fmt.format(src_date)           
-                req = requests.get(url, headers=headers)
-                req.encoding = 'big5'
+                req = requests.get(url, headers=headers, timeout=60)
+                req.raise_for_status()
+                req.encoding = 'ms950'
                 text = req.text
-                text_arr = [i.translate({ord(' '): None}) 
-                            for i in text.split('\n') 
-                                if len(i.split('",')) == 17]
+                if not _response_matches_date(market_type, text, src_date):
+                    print('No data')
+                    continue
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                with open(file_path, 'w', encoding='utf8', newline='') as f:
+                    f.write(text)
+                normalize_file(market_type, file_path)
 
-                if len(text_arr) > 0:                    
+                if os.path.isfile(file_path):
                     latest_date = single_date.strftime("%Y%m%d")
                     print("latest date: ", latest_date)
-                    with open(file_path, 'a+', encoding='utf8') as f:                        
-                        initialize_text = "".join(text_arr) 
-                        f.write(initialize_text)
-                        f.close()
-                        print('Load Done')
+                    print('Load Done')
                 else:
                     print('No data')
                 #print("Sleep 10")
@@ -172,7 +227,8 @@ def load_range(market_type:str, url_fmt:str, headers:str, start_date:str=None, e
         if parse_to_db:
             print("Parse file {0} to db".format(file_path))
             parse_file_to_db(market_type, file_path)           
-    check_update_latest_day(latest_date)
+    if parse_to_db:
+        check_update_latest_day(latest_date)
 
 if __name__=="__main__":
     load_range("twse", define.Define.TWSE_DAILY_PRICE_URL_FMT, define.Define.TWSE_DAILY_PRICE_HEADERS, parse_to_db=True)

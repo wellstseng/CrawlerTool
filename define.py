@@ -1,7 +1,10 @@
 import os
-import twstock
+
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__)).replace('\\','/')
+DEFAULT_FILE_PATH = os.path.join(PROJECT_ROOT, "StockResource") if os.name != "nt" else r"E:\StockResource"
+
 class Define:
-    FILE_PATH = "E:\StockResource" #os.path.abspath(os.path.dirname(__file__)).replace('\\','/')
+    FILE_PATH = os.environ.get("STOCK_RESOURCE_PATH", DEFAULT_FILE_PATH).replace('\\','/')
     LIST_PATH_FMT = FILE_PATH + '/data/list{}.csv'
     TEST_HTML_PATH = FILE_PATH + '/data/test/stock_list.txt'
     TEST_LEADER_TRADE_PATH = FILE_PATH + '/res/test/leader_trade.txt'
@@ -13,18 +16,18 @@ class Define:
     BRANCH_LIST = FILE_PATH + '/res/branchList.csv'
     LEGAL_PERSON_PATH_FMT = FILE_PATH + '/res/legalperson/{0}_M{1}.csv'
     SRC_DATA_PATH_FMT = FILE_PATH + "/data/{0}/{1}"
-    TWSE_MARGIN_URL_FMT = 'http://www.tse.com.tw/exchangeReport/MI_MARGN?response=csv&date={0}&selectType=ALL'
+    TWSE_MARGIN_URL_FMT = 'https://www.twse.com.tw/exchangeReport/MI_MARGN?response=csv&date={0}&selectType=ALL'
     TWSE_MARGIN_REQ_HEADERS = {
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",        
         "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         "Accept-Encoding":"gzip, deflate",
         "Accept-Language":"zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         "Connection":"keep-alive",
-        "Host":"www.tse.com.tw",
+        "Host":"www.twse.com.tw",
         "Upgrade-Insecure-Requests":"1"
     }
     
-    TPEX_MARGIN_URL_FMT = 'http://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal_result.php?l=zh-tw&o=csv&d={0}&s=0,asc'
+    TPEX_MARGIN_URL_FMT = 'https://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal_result.php?l=zh-tw&o=csv&d={0}&s=0,asc'
     TPEX_MARGIN_REQ_HEADERS = {
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
         "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -34,21 +37,21 @@ class Define:
         "Cookie":"_ga=GA1.3.2117065285.1533458331; _gid=GA1.3.751473853.1534577751",
         "Host":"www.tpex.org.tw",
         "Upgrade-Insecure-Requests":"1",
-        "Referer": "http://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal.php?l=zh-tw"
+        "Referer": "https://www.tpex.org.tw/web/stock/margin_trading/margin_balance/margin_bal.php?l=zh-tw"
     }
-    TWSE_DAYTRADING_URL_FMT = 'http://www.tse.com.tw/exchangeReport/TWTB4U?response=csv&date={0}&selectType=All'
+    TWSE_DAYTRADING_URL_FMT = 'https://www.twse.com.tw/exchangeReport/TWTB4U?response=csv&date={0}&selectType=All'
     TWSE_DAYTRADING_REQ_HEADERS = {
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
-        "Referer":"http://www.tse.com.tw/zh/page/trading/exchange/TWTB4U.html",
+        "Referer":"https://www.twse.com.tw/zh/page/trading/exchange/TWTB4U.html",
         "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         "Accept-Encoding":"gzip, deflate",
         "Accept-Language":"zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
         "Connection":"keep-alive",
         "Cookie":"_ga=GA1.3.2036274003.1532407181; _gid=GA1.3.1849235811.1532407181; JSESSIONID=9994EBB73146154704AC81F3F5770114; _gat=1",
-        "Host":"www.tse.com.tw",
+        "Host":"www.twse.com.tw",
         "Upgrade-Insecure-Requests":"1"
     }
-    TPEX_DAYTRADING_URL_FMT = 'http://www.tpex.org.tw/web/stock/trading/intraday_stat/intraday_trading_stat_result.php?l=zh-tw&d={0}&s=0,asc,0&o=csv'
+    TPEX_DAYTRADING_URL_FMT = 'https://www.tpex.org.tw/web/stock/trading/intraday_stat/intraday_trading_stat_result.php?l=zh-tw&d={0}&s=0,asc,0&o=csv'
     TPEX_DAYTRADING_REQ_HEADERS = {
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
         "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -58,10 +61,10 @@ class Define:
         "Cookie":"_ga=GA1.3.1880665680.1532410072; _gid=GA1.3.1462450588.1532519038",
         "Host":"www.tpex.org.tw",
         "Upgrade-Insecure-Requests":"1",
-		"Referer": "http://www.tpex.org.tw/web/stock/trading/intraday_stat/intraday_trading_stat.php?l=zh-tw"
+		"Referer": "https://www.tpex.org.tw/web/stock/trading/intraday_stat/intraday_trading_stat.php?l=zh-tw"
     }
     
-    TWSE_DAILY_PRICE_URL_FMT = 'http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={}&type=ALL'
+    TWSE_DAILY_PRICE_URL_FMT = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={}&type=ALL'
     TWSE_DAILY_PRICE_HEADERS = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate",
@@ -69,12 +72,12 @@ class Define:
         "Connection": "keep-alive",
         "Cookie": "JSESSIONID=F9F448B023345534D12186AA912F365B; _ga=GA1.3.2036274003.1532407181; _gid=GA1.3.1849235811.1532407181; _gat=1",
         "Host":"www.twse.com.tw",
-        "Referer": "http://www.twse.com.tw/zh/page/trading/exchange/MI_INDEX.html",
+        "Referer": "https://www.twse.com.tw/zh/page/trading/exchange/MI_INDEX.html",
         "Upgrade-Insecure-Requests": "1",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"
     }
 
-    TPEX_DAILY_PRICE_URL_FMT = "http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&o=csv&d={0}&s=0,asc,0" 
+    TPEX_DAILY_PRICE_URL_FMT = "https://www.tpex.org.tw/www/zh-tw/afterTrading/dailyQuotes?date={0}&id=&response=csv" 
     TPEX_DAILY_PRICE_HEADERS = {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         "Accept-Encoding": "gzip, deflate",
@@ -82,13 +85,13 @@ class Define:
         "Connection": "keep-alive",
         "Cookie": "_ga=GA1.3.1880665680.1532410072; _gid=GA1.3.328060233.1532410072; _gat=1",
         "Host":"www.tpex.org.tw",
-        "Referer": "http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote.php?l=zh-tw",
+        "Referer": "https://www.tpex.org.tw/zh-tw/mainboard/trading/info/mi-pricing.html?type=AL",
         "Upgrade-Insecure-Requests": "1",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"
     }
 
-    TWSE_LEGAL_PERSON_TRADE_FMT = 'http://www.twse.com.tw/fund/T86?response=csv&date={}&selectType=ALL'
-    TPEX_LEGAL_PERSON_TRADE_FMT ='http://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d={}&s=0,asc'
+    TWSE_LEGAL_PERSON_TRADE_FMT = 'https://www.twse.com.tw/fund/T86?response=csv&date={}&selectType=ALL'
+    TPEX_LEGAL_PERSON_TRADE_FMT ='https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d={}&s=0,asc'
     STOCK_LIST_SHEET_NAME = 'ID'
     
     @staticmethod
@@ -107,6 +110,7 @@ class Define:
 
     @staticmethod
     def get_market_type(stock_id: str):
+        import twstock
         if stock_id in twstock.twse and not stock_id in twstock.tpex:
             return MarketType.TWSE
         elif not stock_id in twstock.twse and stock_id in twstock.tpex:
