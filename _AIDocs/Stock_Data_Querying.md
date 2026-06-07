@@ -42,7 +42,8 @@ query_stock_data.py
 | `price` | 每日行情，含 OHLCV、成交金額、成交筆數 |
 | `margin` | 融資融券，含資買、資賣、資餘額、券餘額 |
 | `day_trading` | 當沖量額 |
-| `stock_list` | 上市/上櫃股票清單 |
+| `legal_person` | 三大法人買賣超，含外資、投信、自營商與合計 |
+| `stock_list` | 上市/上櫃股票清單，含 ETF、創新板與 TDR |
 
 ## Download Raw CSV
 
@@ -70,6 +71,7 @@ python3 scripts/download_data.py --start 20260601 --end 20260605 --type all --ma
 python3 scripts/download_data.py --date 20260605 --type price
 python3 scripts/download_data.py --date 20260605 --type margin
 python3 scripts/download_data.py --date 20260605 --type day_trading
+python3 scripts/download_data.py --date 20260605 --type legal_person
 ```
 
 只下載某市場：
@@ -83,7 +85,7 @@ python3 scripts/download_data.py --date 20260605 --market tpex
 
 ```text
 --root          StockResource 根目錄，預設 /Users/wellstseng/project/StockResource
---type          all / price / margin / day_trading，可逗號分隔
+--type          all / price / margin / day_trading / legal_person，可逗號分隔
 --market        all / twse / tpex，可逗號分隔
 --date          單日 YYYYMMDD
 --start --end   日期區間 YYYYMMDD
@@ -124,6 +126,7 @@ python3 scripts/build_parquet_dataset.py --start 20260601 --end 20260605 --type 
 python3 scripts/build_parquet_dataset.py --type price --date 20260605
 python3 scripts/build_parquet_dataset.py --type margin --date 20260605
 python3 scripts/build_parquet_dataset.py --type day_trading --date 20260605
+python3 scripts/build_parquet_dataset.py --type legal_person --date 20260605
 python3 scripts/build_parquet_dataset.py --type stock_list
 ```
 
@@ -132,7 +135,7 @@ python3 scripts/build_parquet_dataset.py --type stock_list
 ```text
 --root          StockResource 根目錄，預設 /Users/wellstseng/project/StockResource
 --output        Parquet 輸出目錄，預設 <root>/parquet
---type          all / price / margin / day_trading / stock_list，可逗號分隔
+--type          all / price / margin / day_trading / legal_person / stock_list，可逗號分隔
 --market        all / twse / tpex，可逗號分隔
 --date          單日 YYYYMMDD
 --start --end   日期區間 YYYYMMDD
@@ -149,6 +152,7 @@ python3 scripts/build_parquet_dataset.py --type stock_list
   price/
   margin/
   day_trading/
+  legal_person/
   stock_list/
   _build_manifest.json
 ```
@@ -179,6 +183,137 @@ python3 scripts/query_stock_data.py query --dataset price --symbol 2330 --start 
 
 ```bash
 python3 scripts/query_stock_data.py joined --symbol 2330 --limit 20
+```
+
+查三大法人：
+
+```bash
+python3 scripts/query_stock_data.py query --dataset legal_person --symbol 2330 --limit 20
+```
+
+## Agent Technical Analysis
+
+技術分析腳本：
+
+```text
+scripts/technical_analysis.py
+```
+
+查單股技術分析，預設 JSON：
+
+```bash
+python3 scripts/technical_analysis.py analyze --symbol 2330 --lookback 300
+```
+
+人看用 table：
+
+```bash
+python3 scripts/technical_analysis.py analyze --symbol 2330 --lookback 300 --format table
+```
+
+附最近 N 根含指標 K 線：
+
+```bash
+python3 scripts/technical_analysis.py analyze --symbol 2330 --lookback 300 --series-limit 5
+```
+
+全市場條件掃描：
+
+```bash
+python3 scripts/technical_analysis.py screen --preset breakout_20d --limit 20
+python3 scripts/technical_analysis.py screen --preset ma_bullish_alignment --market twse --limit 20 --format table
+python3 scripts/technical_analysis.py screen --preset rsi_oversold --sort rsi_14 --asc --limit 20
+```
+
+市場結構摘要：
+
+```bash
+python3 scripts/technical_analysis.py market-summary --limit 10
+python3 scripts/technical_analysis.py market-summary --market twse --format table
+```
+
+目前支援：
+
+- SMA：5、10、20、60、120、240
+- EMA：12、26
+- RSI：14
+- MACD：12/26/9
+- KD：9
+- Bollinger Bands：20、2σ
+- ATR：14
+- volume MA：5、20
+- 20/60 日支撐壓力、52 週高低
+- 趨勢分類、常用訊號、資料 warnings
+
+`screen --preset` 支援：
+
+```text
+breakout_20d
+breakdown_20d
+ma_bullish_alignment
+ma_bearish_alignment
+volume_surge
+rsi_oversold
+rsi_overbought
+macd_bullish_cross
+macd_bearish_cross
+near_52w_high
+near_52w_low
+```
+
+`market-summary` 會輸出：
+
+- 漲跌家數與比例
+- 站上 SMA20/SMA60/SMA240 比例
+- 20 日突破/跌破數
+- 爆量數
+- 均線多頭/空頭排列數
+- 漲幅、跌幅、爆量、突破、跌破排行
+
+注意：
+
+- 目前使用未復權價；跨除權息的長期均線與報酬率可能失真。
+- 預設會排除單日疑似異常價，並在 `warnings` 標出日期；可用 `--no-filter-outliers` 關閉。
+- 全市場掃描預設只納入指定日期當天仍有行情的標的；可用 `--include-stale` 納入停牌或當天無交易資料的標的。
+- `--symbol-regex` 預設 `^[0-9]{4}$`，先聚焦 4 碼股票/TDR；如要 ETF 可自行放寬。
+- `--adjusted` 目前會直接失敗，等 `corporate_actions` / `adjusted_price` 資料集補齊後再開。
+
+## Agent Chip Analysis
+
+籌碼分析腳本：
+
+```text
+scripts/chip_analysis.py
+```
+
+產出指定日期 JSON：
+
+```bash
+python3 scripts/chip_analysis.py --date 2026-06-05
+```
+
+預設輸出：
+
+```text
+/Users/wellstseng/project/StockResource/analysis/YYYY-MM-DD_chip_analysis.json
+```
+
+輸出內容：
+
+- 三大法人總買賣超
+- 外資 / 投信 / 自營買賣超排行
+- 產業別法人資金流向
+- 融資增減排行
+- 當沖熱度排行
+- 背離訊號：價漲外資賣超、價跌投信買超、融資大增但股價轉弱、當沖比過高風險
+
+常用參數：
+
+```text
+--date                   YYYY-MM-DD / YYYYMMDD / latest
+--limit                  各排行筆數，預設 20
+--day-trade-risk-ratio   當沖比風險門檻，預設 30%
+--output                 覆寫輸出路徑
 ```
 
 直接執行 SQL：
@@ -212,10 +347,10 @@ python3 scripts/query_stock_data.py joined --symbol 2330 --limit 5 --format tabl
 
 ```text
 schema
-  --dataset all / price / margin / day_trading / stock_list
+  --dataset all / price / margin / day_trading / legal_person / stock_list
 
 query
-  --dataset      price / margin / day_trading / stock_list
+  --dataset      price / margin / day_trading / legal_person / stock_list
   --symbol       股票代號
   --market       all / twse / tpex
   --start --end  日期區間，YYYYMMDD 或 YYYY-MM-DD
@@ -225,12 +360,22 @@ query
   --format       json / jsonl / csv / table
 
 joined
-  以 price 為主，left join margin 與 day_trading
+  以 price 為主，left join margin、day_trading 與 legal_person
 
 sql
   --query        直接執行 SQL
   --file         從 .sql 檔讀 SQL
 ```
+
+## Update DuckDB View File
+
+DBeaver 使用的 `stock.duckdb` views 可用這支腳本更新：
+
+```bash
+python3 scripts/update_stock_duckdb.py
+```
+
+注意：DBeaver 開著時會鎖住 `stock.duckdb`，更新 view 前要先關掉 DBeaver 或 disconnect。
 
 ## DBeaver
 
@@ -246,6 +391,7 @@ DBeaver 可以連：
 main.price
 main.margin
 main.day_trading
+main.legal_person
 main.stock_list
 ```
 
@@ -274,12 +420,18 @@ select
   p.volume,
   m.margin_balance,
   m.short_balance,
-  d.day_trade_volume
+  d.day_trade_volume,
+  l.foreign_net,
+  l.investment_trust_net,
+  l.dealer_net,
+  l.total_net
 from price p
 left join margin m
   on p.date = m.date and p.market = m.market and p.symbol = m.symbol
 left join day_trading d
   on p.date = d.date and p.market = d.market and p.symbol = d.symbol
+left join legal_person l
+  on p.date = l.date and p.market = l.market and p.symbol = l.symbol
 where p.symbol = '2330'
 order by p.date desc
 limit 20;
@@ -292,6 +444,7 @@ limit 20;
 ```bash
 python3 scripts/download_data.py --date 20260605 --type all --market all
 python3 scripts/build_parquet_dataset.py --date 20260605 --type all --verify
+python3 scripts/update_stock_duckdb.py
 ```
 
 如果要補一段時間：
@@ -299,13 +452,16 @@ python3 scripts/build_parquet_dataset.py --date 20260605 --type all --verify
 ```bash
 python3 scripts/download_data.py --start 20260601 --end 20260605 --type all --market all --weekdays-only
 python3 scripts/build_parquet_dataset.py --start 20260601 --end 20260605 --type all --verify
+python3 scripts/update_stock_duckdb.py
 ```
 
 排程時建議：
 
 - 先下載 raw CSV。
 - 再轉同一天 Parquet。
+- 用 `audit_local_data.py --types legal_person --freshness` 檢查法人資料日期是否跟 price 對齊。
 - 加 `--verify` 檢查 row count。
+- DBeaver 若需要看到新 view，關閉 DBeaver 後跑 `update_stock_duckdb.py`。
 - 需要嚴格失敗才加 `--fail-on-error`。
 - 不要每日全量重建；只有 schema/parser 修正時才全量重建。
 
@@ -319,8 +475,12 @@ python3 scripts/build_parquet_dataset.py --start 20260601 --end 20260605 --type 
 price        92,243,859
 margin        8,002,094
 day_trading   4,005,899
-stock_list        1,744
+legal_person      2,012  # 目前僅已匯入 2026-06-05 單日驗證資料
+stock_list        2,322
 ```
+
+- 2026-06-07 驗證：2026-06-05 最新行情中 1,965 個 4 碼可交易標的全數存在於 `stock_list`。
+- `StockList/loader.py` 會同時輸出 `StockList/list_*.csv` 與 `/Users/wellstseng/project/StockResource/data/list*.csv`；更新清單後仍需重建 `stock_list` Parquet。
 
 - 已知 raw CSV 壞檔：
 

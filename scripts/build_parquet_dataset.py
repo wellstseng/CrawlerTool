@@ -15,7 +15,7 @@ import pyarrow.parquet as pq
 
 
 DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
-DATA_TYPES = ("price", "margin", "day_trading", "stock_list")
+DATA_TYPES = ("price", "margin", "day_trading", "legal_person", "stock_list")
 MARKETS = ("twse", "tpex")
 DATE_RE = re.compile(r"^\d{8}$")
 SYMBOL_RE = re.compile(r"^[0-9A-Za-z]+$")
@@ -67,6 +67,31 @@ DAY_TRADING_SCHEMA = pa.schema([
     ("day_trade_volume", pa.int64()),
     ("day_trade_buy_amount", pa.int64()),
     ("day_trade_sell_amount", pa.int64()),
+    ("source_file", pa.string()),
+])
+
+LEGAL_PERSON_SCHEMA = pa.schema([
+    ("date", pa.date32()),
+    ("market", pa.string()),
+    ("symbol", pa.string()),
+    ("name", pa.string()),
+    ("foreign_buy", pa.int64()),
+    ("foreign_sell", pa.int64()),
+    ("foreign_net", pa.int64()),
+    ("foreign_dealer_buy", pa.int64()),
+    ("foreign_dealer_sell", pa.int64()),
+    ("foreign_dealer_net", pa.int64()),
+    ("investment_trust_buy", pa.int64()),
+    ("investment_trust_sell", pa.int64()),
+    ("investment_trust_net", pa.int64()),
+    ("dealer_net", pa.int64()),
+    ("dealer_self_buy", pa.int64()),
+    ("dealer_self_sell", pa.int64()),
+    ("dealer_self_net", pa.int64()),
+    ("dealer_hedge_buy", pa.int64()),
+    ("dealer_hedge_sell", pa.int64()),
+    ("dealer_hedge_net", pa.int64()),
+    ("total_net", pa.int64()),
     ("source_file", pa.string()),
 ])
 
@@ -291,6 +316,95 @@ def parse_day_trading(path, market, value):
     return records
 
 
+def parse_legal_person(path, market, value):
+    rows = read_csv_rows(path)
+    header_index, header = find_header(rows, ("證券代號", "代號"))
+    if header is None:
+        raise ValueError("legal_person_header_not_found")
+
+    records = []
+    for row in rows[header_index + 1:]:
+        symbol = by_header(header, row, ("證券代號", "代號"))
+        if not is_symbol(symbol):
+            continue
+        records.append({
+            "date": value,
+            "market": market,
+            "symbol": clean_cell(symbol),
+            "name": by_header(header, row, ("證券名稱", "名稱")).strip(),
+            "foreign_buy": parse_int(by_header(header, row, (
+                "外陸資買進股數(不含外資自營商)",
+                "外資及陸資(不含外資自營商)-買進股數",
+            ))),
+            "foreign_sell": parse_int(by_header(header, row, (
+                "外陸資賣出股數(不含外資自營商)",
+                "外資及陸資(不含外資自營商)-賣出股數",
+            ))),
+            "foreign_net": parse_int(by_header(header, row, (
+                "外陸資買賣超股數(不含外資自營商)",
+                "外資及陸資(不含外資自營商)-買賣超股數",
+            ))),
+            "foreign_dealer_buy": parse_int(by_header(header, row, (
+                "外資自營商買進股數",
+                "外資自營商-買進股數",
+            ))),
+            "foreign_dealer_sell": parse_int(by_header(header, row, (
+                "外資自營商賣出股數",
+                "外資自營商-賣出股數",
+            ))),
+            "foreign_dealer_net": parse_int(by_header(header, row, (
+                "外資自營商買賣超股數",
+                "外資自營商-買賣超股數",
+            ))),
+            "investment_trust_buy": parse_int(by_header(header, row, (
+                "投信買進股數",
+                "投信-買進股數",
+            ))),
+            "investment_trust_sell": parse_int(by_header(header, row, (
+                "投信賣出股數",
+                "投信-賣出股數",
+            ))),
+            "investment_trust_net": parse_int(by_header(header, row, (
+                "投信買賣超股數",
+                "投信-買賣超股數",
+            ))),
+            "dealer_net": parse_int(by_header(header, row, (
+                "自營商買賣超股數",
+                "自營商-買賣超股數",
+            ))),
+            "dealer_self_buy": parse_int(by_header(header, row, (
+                "自營商買進股數(自行買賣)",
+                "自營商(自行買賣)-買進股數",
+            ))),
+            "dealer_self_sell": parse_int(by_header(header, row, (
+                "自營商賣出股數(自行買賣)",
+                "自營商(自行買賣)-賣出股數",
+            ))),
+            "dealer_self_net": parse_int(by_header(header, row, (
+                "自營商買賣超股數(自行買賣)",
+                "自營商(自行買賣)-買賣超股數",
+            ))),
+            "dealer_hedge_buy": parse_int(by_header(header, row, (
+                "自營商買進股數(避險)",
+                "自營商(避險)-買進股數",
+            ))),
+            "dealer_hedge_sell": parse_int(by_header(header, row, (
+                "自營商賣出股數(避險)",
+                "自營商(避險)-賣出股數",
+            ))),
+            "dealer_hedge_net": parse_int(by_header(header, row, (
+                "自營商買賣超股數(避險)",
+                "自營商(避險)-買賣超股數",
+            ))),
+            "total_net": parse_int(by_header(header, row, (
+                "三大法人買賣超股數",
+                "三大法人買賣超股數合計",
+            ))),
+            "source_file": str(path),
+        })
+    return records
+
+
 def parse_stock_list(path):
     rows = read_csv_rows(path)
     if not rows:
@@ -317,6 +431,7 @@ def schema_for(dtype):
         "price": PRICE_SCHEMA,
         "margin": MARGIN_SCHEMA,
         "day_trading": DAY_TRADING_SCHEMA,
+        "legal_person": LEGAL_PERSON_SCHEMA,
         "stock_list": STOCK_LIST_SCHEMA,
     }[dtype]
 
@@ -326,6 +441,7 @@ def parser_for(dtype):
         "price": parse_price,
         "margin": parse_margin,
         "day_trading": parse_day_trading,
+        "legal_person": parse_legal_person,
     }[dtype]
 
 
@@ -422,7 +538,7 @@ def verify_with_duckdb(output):
         return
 
     con = duckdb.connect()
-    for dtype in ("price", "margin", "day_trading"):
+    for dtype in ("price", "margin", "day_trading", "legal_person"):
         pattern = str(output / dtype / "**" / "*.parquet")
         if not glob.glob(pattern, recursive=True):
             continue
@@ -439,7 +555,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=os.environ.get("STOCK_RESOURCE_PATH", DEFAULT_ROOT))
     parser.add_argument("--output")
-    parser.add_argument("--type", default="all", help="all or comma-separated: price,margin,day_trading,stock_list")
+    parser.add_argument("--type", default="all", help="all or comma-separated: price,margin,day_trading,legal_person,stock_list")
     parser.add_argument("--market", default="all", help="all or comma-separated: twse,tpex")
     parser.add_argument("--date", help="YYYYMMDD. Ignored when --start is used")
     parser.add_argument("--start", help="YYYYMMDD")

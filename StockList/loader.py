@@ -16,6 +16,9 @@ class MarketType:
 class StockListHolder:
     FILE_PATH = os.path.abspath(os.path.dirname(__file__)).replace('\\','/')
     FILE_PATH_FMT=FILE_PATH + "/list_{}.csv"
+    PROJECT_ROOT = os.path.dirname(FILE_PATH)
+    RESOURCE_PATH = os.environ.get("STOCK_RESOURCE_PATH", os.path.join(os.path.dirname(PROJECT_ROOT), "StockResource")).replace('\\','/')
+    RESOURCE_FILE_PATH_FMT = RESOURCE_PATH + "/data/list{}.csv"
     TEST = False
     @staticmethod
     def __load_data(marketType):        
@@ -45,22 +48,30 @@ class StockListHolder:
             return text
 
     @staticmethod
-    def __save_data(marketType, data):   
-        print("save list...")
-        json_str = str(data).replace('\u3000','').replace('\'','"').replace(' ','')
-        data_parsed = json.loads(json_str)
-        file_path = StockListHolder.FILE_PATH_FMT.format(marketType)
+    def __write_csv(file_path, data_parsed, normalized=False):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         if os.path.isfile(file_path):
             os.remove(file_path)
 
         f = open(file_path, "a+", encoding='utf-8', newline='')
         csv_writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
-        csv_writer.writerow(['Id','Name','PublishDate','MarketId','IndustryId'])
+        if normalized:
+            csv_writer.writerow(['id','name','listing_date','market','industry'])
+        else:
+            csv_writer.writerow(['Id','Name','PublishDate','MarketId','IndustryId'])
 
         for key, value in data_parsed.items():            
             csv_writer.writerow(["{}".format(key)] + value)
 
         f.close()
+
+    @staticmethod
+    def __save_data(marketType, data):   
+        print("save list...")
+        json_str = str(data).replace('\u3000','').replace('\'','"').replace(' ','')
+        data_parsed = json.loads(json_str)
+        StockListHolder.__write_csv(StockListHolder.FILE_PATH_FMT.format(marketType), data_parsed)
+        StockListHolder.__write_csv(StockListHolder.RESOURCE_FILE_PATH_FMT.format(marketType), data_parsed, True)
     
     @staticmethod
     def __parse_data(src):
@@ -73,7 +84,7 @@ class StockListHolder:
             cols = row.find_all('td')
 
             if len(cols) == 1 :
-                if "股票" in cols[0].text or "ETF" in cols[0].text:
+                if "股票" in cols[0].text or "ETF" in cols[0].text or "創新板" in cols[0].text or "臺灣存託憑證" in cols[0].text:
                     do_parse = True
                 else:
                     do_parse = False

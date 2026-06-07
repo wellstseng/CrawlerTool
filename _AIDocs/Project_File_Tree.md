@@ -37,6 +37,8 @@ CrawlerTool/
 | `DailyTrade/daily_price2.py` | 預設下載 TWSE/TPEX 每日行情並寫入 MongoDB。 |
 | `StockList/loader.py` | 依命令列參數抓取指定市場股票清單。 |
 | `StockList/mssql.py` | 依命令列參數讀取 `list_*.csv` 並同步到 MSSQL。 |
+| `scripts/technical_analysis.py` | 讀 Parquet/DuckDB view，輸出 Agent 用單股技術分析 JSON/table。 |
+| `scripts/chip_analysis.py` | 讀 price/legal_person/margin/day_trading/stock_list，輸出投資日報用籌碼分析 JSON。 |
 | `temp.py` | 列出 MongoDB 中名稱包含 `DailyInfo_` 的 collection，drop 行為目前註解。 |
 
 ## 技術棧
@@ -58,8 +60,9 @@ CrawlerTool/
 ```text
 StockList/loader.py
   -> TWSE ISIN HTML
-  -> parse 股票/ETF rows
+  -> parse 股票/ETF/創新板/TDR rows
   -> StockList/list_2.csv, StockList/list_4.csv
+  -> StockResource/data/list2.csv, StockResource/data/list4.csv
 
 DailyTrade/daily_price2.py
   -> 依 define.py HTTPS URL 抓 TWSE/TPEX 每日行情

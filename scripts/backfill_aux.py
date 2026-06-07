@@ -27,6 +27,8 @@ TASKS = {
         "https://www.twse.com.tw/rwd/zh/dayTrading/TWTB4U?date={0}&selectType=All&response=csv",
     ),
     ("day_trading", define.MarketType.TPEX): define.Define.TPEX_DAYTRADING_URL_FMT,
+    ("legal_person", define.MarketType.TWSE): define.Define.TWSE_LEGAL_PERSON_TRADE_FMT,
+    ("legal_person", define.MarketType.TPEX): define.Define.TPEX_LEGAL_PERSON_TRADE_FMT,
 }
 
 
@@ -103,6 +105,8 @@ def response_is_data(dtype, market, value, text):
             )
         if dtype == "day_trading":
             return roc_date(value) in text and "\"證券代號\"" in text and len(text.splitlines()) > 6
+        if dtype == "legal_person":
+            return twse_text_date(value) in text and "三大法人" in text and "代號" in text and len(text.splitlines()) > 3
 
     if twse_text_date(value) not in text:
         return False
@@ -110,6 +114,8 @@ def response_is_data(dtype, market, value, text):
         return "融資融券彙總" in text and "\"代號\"" in text and len(text.splitlines()) > 8
     if dtype == "day_trading":
         return "\"證券代號\"" in text and len(text.splitlines()) > 6
+    if dtype == "legal_person":
+        return "三大法人" in text and "\"證券代號\"" in text and len(text.splitlines()) > 3
     return False
 
 
@@ -188,7 +194,7 @@ def selected_tasks(dtype, market):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=os.environ.get("STOCK_RESOURCE_PATH", DEFAULT_ROOT))
-    parser.add_argument("--type", choices=("margin", "day_trading", "all"), default="all")
+    parser.add_argument("--type", choices=("margin", "day_trading", "legal_person", "all"), default="all")
     parser.add_argument("--market", choices=(define.MarketType.TWSE, define.MarketType.TPEX, "all"), default="all")
     parser.add_argument("--start", default="20180921")
     parser.add_argument("--end", default=date.today().strftime("%Y%m%d"))

@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
-DATA_TYPES = ("price", "margin", "day_trading")
+DATA_TYPES = ("price", "margin", "day_trading", "legal_person")
 MARKETS = ("twse", "tpex")
 
 
@@ -94,7 +94,7 @@ def download_aux(backfill_aux, root, dtype, market, value, force, timeout, dry_r
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=os.environ.get("STOCK_RESOURCE_PATH", DEFAULT_ROOT))
-    parser.add_argument("--type", default="all", help="all or comma-separated: price,margin,day_trading")
+    parser.add_argument("--type", default="all", help="all or comma-separated: price,margin,day_trading,legal_person")
     parser.add_argument("--market", default="all", help="all or comma-separated: twse,tpex")
     parser.add_argument("--date", default=date.today().strftime("%Y%m%d"), help="YYYYMMDD. Ignored when --start is used")
     parser.add_argument("--start", help="YYYYMMDD")

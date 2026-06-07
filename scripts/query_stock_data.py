@@ -18,9 +18,10 @@ DATASETS = {
     "price": "parquet/price/**/*.parquet",
     "margin": "parquet/margin/**/*.parquet",
     "day_trading": "parquet/day_trading/**/*.parquet",
+    "legal_person": "parquet/legal_person/**/*.parquet",
     "stock_list": "parquet/stock_list/*.parquet",
 }
-DATE_DATASETS = {"price", "margin", "day_trading"}
+DATE_DATASETS = {"price", "margin", "day_trading", "legal_person"}
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -177,12 +178,14 @@ def command_joined(con, args):
         "p.volume", "p.amount", "p.transactions",
         "m.margin_buy", "m.margin_sell", "m.margin_balance", "m.short_sell", "m.short_balance", "m.offset",
         "d.day_trade_volume", "d.day_trade_buy_amount", "d.day_trade_sell_amount",
+        "l.foreign_net", "l.investment_trust_net", "l.dealer_net", "l.total_net",
     ]
     sql = [
         "select {0}".format(", ".join(fields)),
         "from price p",
         "left join margin m on p.date = m.date and p.market = m.market and p.symbol = m.symbol",
         "left join day_trading d on p.date = d.date and p.market = d.market and p.symbol = d.symbol",
+        "left join legal_person l on p.date = l.date and p.market = l.market and p.symbol = l.symbol",
     ]
     if filters:
         sql.append("where " + " and ".join(filters))

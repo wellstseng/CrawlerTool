@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
-DATA_TYPES = ("price", "margin", "day_trading")
+DATA_TYPES = ("price", "margin", "day_trading", "legal_person")
 MARKETS = ("twse", "tpex")
 DATE_RE = re.compile(r"^\d{8}$")
 
@@ -89,10 +89,37 @@ def active_start(files, explicit_start):
     return parse_ymd(min(files))
 
 
+def print_freshness(scanned, dtypes, markets):
+    print("== freshness ==")
+    for market in markets:
+        price_files = scanned.get(("price", market), {}).get("files", set())
+        price_latest = max(price_files) if price_files else None
+        for dtype in dtypes:
+            files = scanned.get((dtype, market), {}).get("files", set())
+            latest = max(files) if files else None
+            lag_days = None
+            stale = None
+            if price_latest and latest:
+                lag_days = (parse_ymd(price_latest) - parse_ymd(latest)).days
+                stale = latest < price_latest
+            elif price_latest and not latest:
+                stale = True
+            print(
+                "{dtype}/{market} latest={latest} price_latest={price_latest} lag_days={lag_days} stale={stale}".format(
+                    dtype=dtype,
+                    market=market,
+                    latest=latest or "-",
+                    price_latest=price_latest or "-",
+                    lag_days="-" if lag_days is None else lag_days,
+                    stale="-" if stale is None else stale,
+                )
+            )
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", default=os.environ.get("STOCK_RESOURCE_PATH", DEFAULT_ROOT))
-    parser.add_argument("--types", default=",".join(DATA_TYPES), help="comma-separated: price,margin,day_trading")
+    parser.add_argument("--types", default=",".join(DATA_TYPES), help="comma-separated: price,margin,day_trading,legal_person")
     parser.add_argument("--markets", default=",".join(MARKETS), help="comma-separated: twse,tpex")
     parser.add_argument("--start", help="YYYYMMDD. Default: each bucket's first local CSV date")
     parser.add_argument("--end", default=date.today().strftime("%Y%m%d"))
@@ -105,6 +132,7 @@ def main():
         help="use local price as aux trading-day baseline; for price, also report tail gaps from other local data types. inferred uses same data type only",
     )
     parser.add_argument("--strict-weekdays", action="store_true", help="expect every weekday instead of inferred local trading days")
+    parser.add_argument("--freshness", action="store_true", help="print latest local CSV date per type/market compared with price")
     parser.add_argument("--fail-on-missing", action="store_true")
     args = parser.parse_args()
 
@@ -213,6 +241,8 @@ def main():
             if weekend:
                 print("  weekend_sample={0}".format(sample(weekend, args.sample)))
 
+    if args.freshness:
+        print_freshness(scanned, dtypes, markets)
     if args.fail_on_missing and has_missing:
         raise SystemExit(1)
 
