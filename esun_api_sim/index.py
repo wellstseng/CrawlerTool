@@ -34,7 +34,7 @@ def main():
         buy_sell=Action.Buy,
         price_flag=PriceFlag.LimitDown,  # 跌停價，測試用不會成交
         price=None,
-        stock_no=2884,                   # 玉山金（自家股，純測試）
+        stock_no="2884",                   # 玉山金（自家股，純測試）
         quantity=1,
     )
     result = sdk.place_order(order)

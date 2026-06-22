@@ -1,6 +1,7 @@
 # 機敏檔案 —— 絕不進版控
-config.simulation.ini
-config.production.ini
+# config*.ini 涵蓋 config.ini / config.simulation.ini / config.production.ini
+# （.example 範本結尾非 .ini，不受此規則影響，仍會進版控）
+config*.ini
 *.p12
 *.pfx
 *.pem
