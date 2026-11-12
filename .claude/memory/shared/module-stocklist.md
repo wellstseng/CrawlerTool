@@ -4,6 +4,7 @@
 - Confidence: [臨]
 - Trigger: StockList, 股票清單, stock list, ISIN, loader, MSSQL, 上市, 上櫃
 - Tags: L1
+- Source: commit:fb4b651 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

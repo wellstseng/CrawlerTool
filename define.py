@@ -90,7 +90,7 @@ class Define:
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"
     }
 
-    TWSE_LEGAL_PERSON_TRADE_FMT = 'https://www.twse.com.tw/fund/T86?response=csv&date={}&selectType=ALL'
+    TWSE_LEGAL_PERSON_TRADE_FMT = 'https://www.twse.com.tw/rwd/zh/fund/T86?date={}&selectType=ALL&response=csv'
     TPEX_LEGAL_PERSON_TRADE_FMT ='https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d={}&s=0,asc'
     STOCK_LIST_SHEET_NAME = 'ID'
     

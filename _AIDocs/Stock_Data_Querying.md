@@ -65,6 +65,14 @@ python3 scripts/download_data.py --date 20260605 --type all --market all
 python3 scripts/download_data.py --start 20260601 --end 20260605 --type all --market all --weekdays-only
 ```
 
+回補三大法人歷史資料：
+
+```bash
+python3 scripts/download_data.py --start 20240101 --end 20260609 --type legal_person --market all --weekdays-only --sleep 0.2
+python3 scripts/build_parquet_dataset.py --start 20240101 --end 20260609 --type legal_person --verify --fail-on-error
+python3 scripts/update_stock_duckdb.py
+```
+
 只下載某一類：
 
 ```bash
@@ -316,6 +324,40 @@ python3 scripts/chip_analysis.py --date 2026-06-05
 --output                 覆寫輸出路徑
 ```
 
+## Local Dashboard
+
+本機單頁 GUI：
+
+```text
+scripts/market_dashboard.py
+```
+
+啟動：
+
+```bash
+python3 scripts/market_dashboard.py --host 127.0.0.1 --port 8765
+```
+
+開啟：
+
+```text
+http://127.0.0.1:8765/
+```
+
+Dashboard 內容：
+
+- 市場總覽：漲跌家數、均線廣度、爆量排行。
+- 三大法人與產業資金流：讀 `analysis/YYYY-MM-DD_chip_analysis.json`，沒有快取檔時才重建。
+- 條件掃描：使用 `technical_analysis.py screen` 同一套 preset。
+- 單股技術面：收盤價/SMA20/SMA60 canvas 圖、RSI、訊號、法人合計。
+- 法人排行、融資增減、當沖熱度、背離訊號。
+
+注意：
+
+- Dashboard 只讀本機 Parquet/DuckDB view，不修改 raw CSV 或 Parquet。
+- 第一次全市場技術 summary 會現算約 10 秒級；同一 server 後續使用記憶體快取。
+- 預設無登入與權限控管，只建議綁 `127.0.0.1` 本機使用。
+
 直接執行 SQL：
 
 ```bash
@@ -439,18 +481,39 @@ limit 20;
 
 ## Daily Update
 
-每日更新建議流程：
+CatClaw 已有整合每日市場資料 wrapper：
 
-```bash
-python3 scripts/download_data.py --date 20260605 --type all --market all
-python3 scripts/build_parquet_dataset.py --date 20260605 --type all --verify
-python3 scripts/update_stock_duckdb.py
+```text
+/Users/wellstseng/.catclaw/workspace/agents/wendy/skills/crawler-market-data/scripts/run_daily_market_data.py
 ```
 
-如果要補一段時間：
+目前不在 CrawlerTool 內新增 `scripts/daily_update.py`，避免分散兩套排程入口；正式每日排程走 CatClaw wrapper。
+
+每日更新建議流程已由 wrapper 串起：
+
+```bash
+cd /Users/wellstseng/.catclaw/workspace/agents/wendy/skills/crawler-market-data
+python3 scripts/run_daily_market_data.py --lookback-days 30 --aux-backfill-limit 20 --retries 3 --retry-delay 600
+```
+
+正式排程是 CatClaw cron `10 21 * * 1-5`（Asia/Taipei），action 設定 `timeoutSec=1800`。2026-06-10 已驗證排程產出 `overall_status=ok`，price / margin / day_trading / legal_person 的 TWSE/TPEX freshness 都對齊到 20260610。
+
+重點：每日自動化不能只下載當日。Wrapper 會：
+
+```bash
+python3 scripts/download_data.py --start <T-30> --end <T> --type all --market all --weekdays-only
+python3 scripts/backfill_aux.py --start 20240101 --end <T> --limit 20
+python3 scripts/build_parquet_dataset.py --start <T-30 or previous weekday> --end <T> --type all --verify
+python3 scripts/update_stock_duckdb.py  # wrapper 內用 DuckDB refresh views
+python3 scripts/audit_local_data.py --start 20240101 --end <T> --freshness
+python3 scripts/chip_analysis.py --date <T>
+```
+
+如果要手動補一段時間：
 
 ```bash
 python3 scripts/download_data.py --start 20260601 --end 20260605 --type all --market all --weekdays-only
+python3 scripts/backfill_aux.py --start 20240101 --end 20260605 --limit 20
 python3 scripts/build_parquet_dataset.py --start 20260601 --end 20260605 --type all --verify
 python3 scripts/update_stock_duckdb.py
 ```
@@ -461,9 +524,12 @@ python3 scripts/update_stock_duckdb.py
 - 再轉同一天 Parquet。
 - 用 `audit_local_data.py --types legal_person --freshness` 檢查法人資料日期是否跟 price 對齊。
 - 加 `--verify` 檢查 row count。
+- 跑 `chip_analysis.py --date latest` 更新 Dashboard/日報可讀的籌碼 JSON。
 - DBeaver 若需要看到新 view，關閉 DBeaver 後跑 `update_stock_duckdb.py`。
 - 需要嚴格失敗才加 `--fail-on-error`。
 - 不要每日全量重建；只有 schema/parser 修正時才全量重建。
+- 每日自動化已掛 CatClaw 21:10 cron；不要再把多條命令散掛在排程，也不要只下載當日。
+- CatClaw exec 預設 timeout 只有 120 秒，市場資料排程必須保留 `timeoutSec=1800`，避免資料更新成功但排程狀態被誤標 timeout。
 
 ## 注意事項
 
@@ -472,14 +538,17 @@ python3 scripts/update_stock_duckdb.py
 - 全量 Parquet row count：
 
 ```text
-price        92,243,859
-margin        8,002,094
-day_trading   4,005,899
-legal_person      2,012  # 目前僅已匯入 2026-06-05 單日驗證資料
+price        92,366,974
+margin        8,007,958
+day_trading   4,011,188
+legal_person  1,109,800  # 2024-01-02 至 2026-06-10
 stock_list        2,322
 ```
 
 - 2026-06-07 驗證：2026-06-05 最新行情中 1,965 個 4 碼可交易標的全數存在於 `stock_list`。
+- 2026-06-10 驗證：`price` / `margin` / `day_trading` / `legal_person` 最新日期皆為 2026-06-10。
+- 2026-06-10 驗證：2024-01-01 至 2026-06-10 的 price 交易日對照 legal_person raw CSV，TWSE/TPEX 缺口皆為 0。
+- 已知差異：TWSE 有 `2025-04-03` legal_person raw/parquet，但本機 price 沒有該日；保留原始法人資料，不影響以 price 為主的 join。
 - `StockList/loader.py` 會同時輸出 `StockList/list_*.csv` 與 `/Users/wellstseng/project/StockResource/data/list*.csv`；更新清單後仍需重建 `stock_list` Parquet。
 
 - 已知 raw CSV 壞檔：

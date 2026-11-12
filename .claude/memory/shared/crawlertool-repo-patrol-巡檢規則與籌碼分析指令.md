@@ -6,6 +6,7 @@
 - Trigger: repo-patrol, patrol-state.md, silent-no-change, 巡檢 cron 18:40, S0-S3 報告, chip_analysis.py --date
 - Created-at: 2026-06-07
 - Related: patrol-state
+- Source: commit:669cc06 2026-06-07（原對話已逾保留期）
 
 ## 知識
 

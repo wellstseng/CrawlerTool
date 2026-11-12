@@ -1,7 +1,7 @@
 # CrawlerTool — AI 分析文件索引
 
 > 本資料夾包含由 AI 輔助產出的專案分析文件。
-> 最近更新：2026-06-07
+> 最近更新：2026-06-10
 
 ---
 
@@ -33,12 +33,14 @@ CrawlerTool 是舊版 Python 股票資料爬蟲，負責抓取 TWSE/TPEX 股票�
 | DuckDB view 更新 | `scripts/update_stock_duckdb.py` |
 | Agent 技術分析 | `scripts/technical_analysis.py` |
 | Agent 籌碼分析 | `scripts/chip_analysis.py` |
+| 本機分析 Dashboard | `scripts/market_dashboard.py` |
 
 ## 重要注意
 
-- 專案目前規模小：掃描到 16 個非排除檔案，其中 Python 原始碼 8 個。
+- 專案目前規模小：主要由獨立 Python scripts 組成，沒有大型 web framework。
 - `Requirements.txt` 是 UTF-16 little-endian + CRLF，不是一般 UTF-8 requirements 格式。
 - 多處硬編碼 Windows 路徑、內網 DB 位址與認證資訊；文件不重複列出密碼，改碼前需直接檢查原始碼。
 - 外部資料源已於 2026-06-05 實測更新為 HTTPS；每日行情 parser 已改用欄位名稱正規化，不再依賴舊行長度判斷。
 - TPEX 每日行情需使用 `https://www.tpex.org.tw/www/zh-tw/afterTrading/dailyQuotes?date=YYYY/MM/DD&id=&response=csv`；舊 `stk_quote_result.php` 目前會忽略日期並回最新資料，不可用於歷史補檔。
+- TWSE 三大法人需使用 `https://www.twse.com.tw/rwd/zh/fund/T86?date=YYYYMMDD&selectType=ALL&response=csv`；舊 `/fund/T86` 對部分歷史日期會回空白。
 - 已驗證 2026-06-04 TWSE/TPEX 每日行情下載與正規化；股票清單 ISIN 市場 2/4 live parser 可解析。

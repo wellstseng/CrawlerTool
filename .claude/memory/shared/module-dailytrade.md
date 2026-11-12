@@ -4,6 +4,7 @@
 - Confidence: [臨]
 - Trigger: DailyTrade, daily_price2, 每日行情, 行情下載, MongoDB, mongo, 入庫, upsert
 - Tags: L1
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

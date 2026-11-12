@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: define, 常數, constants, global_func, mongo.py, 路徑, URL, headers, DB_KEY
 - Tags: L1
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

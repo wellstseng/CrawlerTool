@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: 檔案在哪, 哪個檔, where is, doc index, 文件索引
 - Tags: L2
+- Source: commit:fb4b651 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

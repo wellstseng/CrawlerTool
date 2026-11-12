@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: scripts, 查詢, query, parquet, duckdb, 技術分析, technical analysis, 籌碼, dashboard, 下載, download
 - Tags: L1
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

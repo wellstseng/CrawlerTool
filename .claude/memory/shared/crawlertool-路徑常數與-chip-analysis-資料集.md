@@ -5,6 +5,7 @@
 - Confidence: [臨]
 - Trigger: define.py, MARGIN_PATH_FMT, DAILY_PRICE_FMT, StockResource 路徑, chip_analysis.py, legal_person dataset, freshness audit, CrawlerTool 路徑
 - Created-at: 2026-06-07
+- Source: commit:669cc06 2026-06-07（原對話已逾保留期）
 
 ## 知識
 

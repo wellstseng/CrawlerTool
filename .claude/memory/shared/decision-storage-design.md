@@ -4,6 +4,7 @@
 - Confidence: [臨]
 - Trigger: 儲存設計, storage, 為什麼 parquet, 為什麼 duckdb, why mongo, 選型, 資料佈局
 - Tags: decision
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

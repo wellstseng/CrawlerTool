@@ -1,6 +1,6 @@
 # CrawlerTool — 專案結構摘要
 
-> 掃描日期：2026-06-05
+> 掃描日期：2026-06-09
 
 ## 專案概況
 
@@ -39,6 +39,7 @@ CrawlerTool/
 | `StockList/mssql.py` | 依命令列參數讀取 `list_*.csv` 並同步到 MSSQL。 |
 | `scripts/technical_analysis.py` | 讀 Parquet/DuckDB view，輸出 Agent 用單股技術分析 JSON/table。 |
 | `scripts/chip_analysis.py` | 讀 price/legal_person/margin/day_trading/stock_list，輸出投資日報用籌碼分析 JSON。 |
+| `scripts/market_dashboard.py` | 本機單頁分析 Dashboard，讀 Parquet/DuckDB view 與籌碼 JSON，提供市場、技術、籌碼視覺化。 |
 | `temp.py` | 列出 MongoDB 中名稱包含 `DailyInfo_` 的 collection，drop 行為目前註解。 |
 
 ## 技術棧
@@ -52,8 +53,9 @@ CrawlerTool/
 | MongoDB | `pymongo`, `MongoManager` |
 | MSSQL | `pymssql` |
 | 股票代碼判斷 | `twstock` |
+| 本機 GUI | `http.server` + 原生 HTML/CSS/JS/canvas |
 
-`Requirements.txt` 內含 Django、Flask、Celery 等套件 pins，但目前掃描到的原始碼沒有 web app 或 worker entrypoint；可能是舊環境整包 freeze。
+`Requirements.txt` 內含 Django、Flask、Celery 等套件 pins，但目前 Dashboard 未使用大型 web framework；舊 pins 可能是舊環境整包 freeze。
 
 ## 資料流程
 

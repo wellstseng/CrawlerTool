@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: duckdb, 鎖檔, file lock, DBeaver, database is locked
 - Tags: pitfall
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

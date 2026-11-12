@@ -6,6 +6,7 @@
 - Trigger: build_parquet_dataset.py, StockResource/parquet, stock.duckdb view, legal_person view, chip_analysis.json, download_data.py, 三大法人 盤後分析, Parquet schema
 - Created-at: 2026-06-07
 - Related: module-scripts-pipeline, pitfall-stock-resource-path
+- Source: commit:669cc06 2026-06-07（原對話已逾保留期）
 
 ## 知識
 

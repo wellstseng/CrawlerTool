@@ -5,6 +5,7 @@
 - Confidence: [臨]
 - Trigger: DuckDB view, stock.duckdb, Parquet 實體儲存
 - Created-at: 2026-07-02
+- Source: commit:669cc06 2026-07-02（原對話已逾保留期）
 
 ## 知識
 

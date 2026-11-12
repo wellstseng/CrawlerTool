@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: STOCK_RESOURCE_PATH, 預設路徑, 資料根目錄, hardcode
 - Tags: pitfall
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 

@@ -4,6 +4,7 @@
 - Confidence: [觀]
 - Trigger: CrawlerTool, 專案總覽, 架構, architecture, 技術棧, tech stack, 股票爬蟲
 - Tags: L0
+- Source: commit:669cc06 2026-10-05（原對話已逾保留期）
 
 ## 知識
 
