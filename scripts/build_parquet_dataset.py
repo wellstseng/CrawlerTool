@@ -14,7 +14,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
+DEFAULT_ROOT = "/Users/wellstseng/projects/StockResource"
 DATA_TYPES = ("price", "margin", "day_trading", "legal_person", "stock_list")
 MARKETS = ("twse", "tpex")
 DATE_RE = re.compile(r"^\d{8}$")

@@ -13,7 +13,7 @@ from pathlib import Path
 import duckdb
 
 
-DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
+DEFAULT_ROOT = "/Users/wellstseng/projects/StockResource"
 DATASETS = {
     "price": "parquet/price/**/*.parquet",
     "margin": "parquet/margin/**/*.parquet",

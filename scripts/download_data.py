@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
-DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
+DEFAULT_ROOT = "/Users/wellstseng/projects/StockResource"
 DATA_TYPES = ("price", "margin", "day_trading", "legal_person")
 MARKETS = ("twse", "tpex")
 

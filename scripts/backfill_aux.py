@@ -16,7 +16,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 import define
 
 
-DEFAULT_ROOT = "/Users/wellstseng/project/StockResource"
+DEFAULT_ROOT = "/Users/wellstseng/projects/StockResource"
 HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "text/csv,*/*"}
 
 TASKS = {
